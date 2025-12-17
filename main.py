@@ -9,6 +9,7 @@ from typing import Callable
 
 
 def func(x: int | float | np.ndarray) -> int | float | np.ndarray:
+    
     """Funkcja wyliczająca wartości funkcji f(x).
     f(x) = e^(-2x) + x^2 - 1
 
@@ -86,24 +87,54 @@ def bisection(
     epsilon: float,
     max_iter: int,
 ) -> tuple[float, int] | None:
-    """Funkcja aproksymująca rozwiązanie równania f(x) = 0 na przedziale [a,b] 
-    metodą bisekcji.
+    
+    if a >= b:
+        return None
+    
+    try:
+        f_a = f(float(a))
+        f_b = f(float(b))
+    except Exception as e:
+        return None
+    
+    if f_a * f_b > 0:
+        return None
 
-    Args:
-        a (int | float): Początek przedziału.
-        b (int | float): Koniec przedziału.
-        f (Callable[[float], float]): Funkcja, dla której poszukiwane jest 
-            rozwiązanie.
-        epsilon (float): Tolerancja zera maszynowego (warunek stopu).
-        max_iter (int): Maksymalna liczba iteracji.
+    if abs(f_a) < epsilon:
+        return (float(a), 0)
+    if abs(f_b) < epsilon:
+        return (float(b), 0)
+    
+    iter_count = 0
+    current_a = float(a)
+    current_b = float(b)
 
-    Returns:
-        (tuple[float, int]):
-            - Aproksymowane rozwiązanie,
-            - Liczba wykonanych iteracji.
-        Jeżeli dane wejściowe są niepoprawne funkcja zwraca `None`.
-    """
-    pass
+    for i in range(1, max_iter + 1):
+        iter_count = i
+        
+        c = (current_a + current_b) / 2.0
+        
+        try:
+            
+            f_c = f(c)
+        except Exception as e:
+            return None
+
+        if abs(f_c) < epsilon:
+            return (c, iter_count)
+        
+        if f_a * f_c < 0:
+            current_b = c
+
+        elif f_c * f_b < 0:
+            current_a = c
+
+        else:
+            return (c, iter_count)
+        
+    c_final = (current_a + current_b) / 2.0
+    print(f"Maksymalna liczba iteracji ({max_iter}). Wynik może nie być idealnie dokładny.")
+    return (c_final, max_iter)        
 
 
 def secant(
@@ -113,44 +144,47 @@ def secant(
     epsilon: float,
     max_iters: int,
 ) -> tuple[float, int] | None:
-    """funkcja aproksymująca rozwiązanie równania f(x) = 0 na przedziale [a,b] 
-    metodą siecznych.
+    
+    fa = f(a)
+    fb = f(b)
 
-    Args:
-        a (int | float): Początek przedziału.
-        b (int | float): Koniec przedziału.
-        f (Callable[[float], float]): Funkcja, dla której poszukiwane jest 
-            rozwiązanie.
-        epsilon (float): Tolerancja zera maszynowego (warunek stopu).
-        max_iters (int): Maksymalna liczba iteracji.
+    if fa * fb >= 0:
+        return None
 
-    Returns:
-        (tuple[float, int]):
-            - Aproksymowane rozwiązanie,
-            - Liczba wykonanych iteracji.
-        Jeżeli dane wejściowe są niepoprawne funkcja zwraca `None`.
-    """
-    pass
+    i = 0
+    for _ in range(max_iters):
+        i += 1
+
+        if fb == fa:
+            return None
+
+        
+        c = b - fb * (b - a) / (fb - fa)
+        fc = f(c)
+
+       
+        if abs(fc) < epsilon or abs(c - b) < epsilon:
+            return c, i
+
+        
+        if fa * fc < 0:
+            b = c
+            fb = fc
+        else:
+            a = c
+            fa = fc
+
+    return c, i
 
 
 def difference_quotient(
     f: Callable[[float], float], x: int | float, h: int | float
 ) -> float | None:
-    """Funkcja obliczająca wartość iloazu różnicowego w punkcie x dla zadanej 
-    funkcji f(x).
+    
+    if h == 0:
+        return None
 
-    Args:
-        f (Callable[[float], float]): Funkcja, dla której poszukiwane jest 
-            rozwiązanie.
-        x (int | float): Argument funkcji.
-        h (int | float): Krok różnicy wykorzystywanej do wyliczenia ilorazu 
-            różnicowego.
-
-    Returns:
-        (float): Wartość ilorazu różnicowego.
-        Jeżeli dane wejściowe są niepoprawne funkcja zwraca `None`.
-    """
-    pass
+    return (f(x + h) - f(x)) / h
 
 
 def newton(
@@ -162,24 +196,27 @@ def newton(
     epsilon: float,
     max_iter: int,
 ) -> tuple[float, int] | None:
-    """Funkcja aproksymująca rozwiązanie równania f(x) = 0 metodą Newtona.
+    
+    if f(a) * ddf(a) > 0:
+        x_curr = a
+    elif f(b) * ddf(b) > 0:
+        x_curr = b
+    else:
+        x_curr = (a + b) / 2
 
-    Args:
-        f (Callable[[float], float]): Funkcja, dla której poszukiwane jest 
-            rozwiązanie.
-        df (Callable[[float], float]): Pierwsza pochodna funkcji, dla której 
-            poszukiwane jest rozwiązanie.
-        ddf (Callable[[float], float]): Druga pochodna funkcji, dla której 
-            poszukiwane jest rozwiązanie.
-        a (int | float): Początek przedziału.
-        b (int | float): Koniec przedziału.
-        epsilon (float): Tolerancja zera maszynowego (warunek stopu).
-        max_iter (int): Maksymalna liczba iteracji.
+    iteration = 0
+    for _ in range(max_iter):
+        iteration += 1
 
-    Returns:
-        (tuple[float, int]):
-            - Aproksymowane rozwiązanie,
-            - Liczba wykonanych iteracji.
-        Jeżeli dane wejściowe są niepoprawne funkcja zwraca `None`.
-    """
-    pass
+        deriv_val = df(x_curr)
+        if deriv_val == 0:
+            return None
+
+        x_new = x_curr - f(x_curr) / deriv_val
+
+        if abs(x_new - x_curr) < epsilon or abs(f(x_new)) < epsilon:
+            return x_new, iteration
+
+        x_curr = x_new
+
+    return x_curr, iteration
